@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FirebaseAuth — REST Auth (Token-Based)</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <div class="brand" aria-label="FirebaseAuth">
+        <div class="brand__mark" aria-hidden="true"></div>
+        <div class="brand__text">
+          <div class="brand__title">FirebaseAuth</div>
+          <div class="brand__sub">Auth REST API • Token-Based</div>
+        </div>
+      </div>
+
+      <div class="topbar__right">
+        <div class="statusPill" aria-live="polite">
+          <span class="statusDot" id="statusDot"></span>
+          <span class="statusText" id="statusText">Signed out</span>
+        </div>
+
+        <button class="btn btn--ghost" id="btnOpenAccount" type="button" disabled>
+          Account
+        </button>
+
+        <button class="btn btn--ghost" id="btnSignOutTop" type="button" disabled>
+          Sign out
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <h1 class="hero__title">Sign in</h1>
+      <p class="hero__sub">
+        Clean login UI. Profile + security actions are in <b>Account</b> after you sign in.
+      </p>
+    </section>
+
+    <section class="authShell">
+      <section class="authCard" aria-label="Authentication Card">
+        <div class="authTabs" role="tablist" aria-label="Auth tabs">
+          <button class="tab isActive" id="tabSignIn" type="button" role="tab" aria-selected="true">Sign in</button>
+          <button class="tab" id="tabSignUp" type="button" role="tab" aria-selected="false">Create account</button>
+        </div>
+
+        <div class="alert alert--error" id="errorBox" role="alert" aria-live="assertive"></div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="name@example.com" autocomplete="username" />
+          <small class="help">Auto-trim enabled. Must be a valid email.</small>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" placeholder="At least 6 characters" autocomplete="current-password" />
+          <small class="help">Email/Password provider must be enabled in Firebase.</small>
+        </div>
+
+        <div class="row">
+          <button class="btn btn--primary" id="btnSubmit" type="button">Sign in</button>
+          <button class="btn btn--ghost" id="btnForgot" type="button">Forgot password</button>
+        </div>
+
+        <div class="loader" id="loader" aria-hidden="true">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="loader__text" id="loaderText">Loading…</span>
+        </div>
+
+        <div class="fineprint">
+          <div class="fineprint__line">
+            For rubric/demo: show Postman responses first, then demonstrate the same actions here.
+          </div>
+          <div class="fineprint__line">
+            Keep <code>config.js</code> local and gitignored. Commit <code>config.example.js</code> only.
+          </div>
+        </div>
+      </section>
+
+      <section class="sideCard" aria-label="Session Summary">
+        <h2 class="sideTitle">Session</h2>
+
+        <div class="kv" id="sessionKv">
+          <!-- filled by JS -->
+        </div>
+
+        <div class="sideActions">
+          <button class="btn btn--small" id="btnCopyIdToken" type="button" disabled>Copy ID Token</button>
+          <button class="btn btn--small" id="btnCopyRefreshToken" type="button" disabled>Copy Refresh Token</button>
+        </div>
+
+        <div class="miniLog">
+          <div class="miniLog__title">Activity</div>
+          <ol class="miniLog__list" id="logList"></ol>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <!-- ===================== ACCOUNT MODAL ===================== -->
+  <div class="modalBackdrop" id="modalBackdrop" aria-hidden="true"></div>
+
+  <dialog class="modal" id="accountModal" aria-label="Account modal">
+    <div class="modal__head">
+      <div>
+        <div class="modal__title">Account</div>
+        <div class="modal__sub">Profile, security, and API result cards.</div>
+      </div>
+
+      <button class="iconBtn" id="btnCloseModal" type="button" aria-label="Close">
+        ✕
+      </button>
+    </div>
+
+    <div class="modal__body">
+      <section class="modalCol">
+        <h3 class="secTitle">Profile</h3>
+
+        <div class="field">
+          <label for="displayName">Display Name</label>
+          <input id="displayName" type="text" placeholder="e.g. Grant" />
+        </div>
+
+        <div class="field">
+          <label for="photoUrl">Photo URL</label>
+          <input id="photoUrl" type="url" placeholder="https://example.com/photo.jpg" />
+        </div>
+
+        <div class="gridBtns">
+          <button class="btn" id="btnLookup" type="button">Lookup Profile</button>
+          <button class="btn" id="btnUpdate" type="button">Update Profile</button>
+          <button class="btn" id="btnVerifyEmail" type="button">Send Verify Email</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <h3 class="secTitle">Security</h3>
+
+        <div class="field">
+          <label for="newPassword">New Password</label>
+          <input id="newPassword" type="password" placeholder="New password (6+ chars)" autocomplete="new-password" />
+        </div>
+
+        <div class="gridBtns">
+          <button class="btn" id="btnResetPw" type="button">Send Password Reset</button>
+          <button class="btn" id="btnRefresh" type="button">Refresh ID Token</button>
+          <button class="btn" id="btnChangePw" type="button">Change Password</button>
+        </div>
+
+        <div class="danger">
+          <div class="danger__head">Danger zone</div>
+          <div class="danger__sub">Deletes the currently signed-in user permanently.</div>
+          <button class="btn btn--danger" id="btnDelete" type="button">Delete Account</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="gridBtns">
+          <button class="btn btn--ghost" id="btnClearResults" type="button">Clear Results</button>
+          <button class="btn btn--ghost" id="btnClearLog" type="button">Clear Log</button>
+        </div>
+      </section>
+
+      <section class="modalCol">
+        <h3 class="secTitle">Results</h3>
+        <div class="results" id="results">
+          <div class="empty" id="emptyState">
+            <div class="empty__title">No results yet</div>
+            <div class="empty__sub">Use Lookup/Update/etc. to generate cards.</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </dialog>
+
+  <!-- config must define window.FIREBASE_API_KEY -->
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
